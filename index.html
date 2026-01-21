@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scary Search Loading</title>
     <style>
+        :root {
+            --accent: #e74c3c;
+            --accent-glow: rgba(231, 76, 60, 0.5);
+            --secondary: #f39c12; /* Цвет второй полоски (Оранжевый) */
+        }
+
         body {
             background-color: #050505;
             color: #ffffff;
@@ -19,7 +25,9 @@
             align-items: center;
             overflow: hidden;
             user-select: none;
+            cursor: none;
         }
+
         #bg {
             position: absolute;
             top: 0;
@@ -29,238 +37,326 @@
             background: radial-gradient(circle, rgba(20,20,20,1) 0%, rgba(0,0,0,1) 100%);
             z-index: -1;
         }
+
         #visualizer {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 30%;
+            height: 40%;
             z-index: 0;
-            opacity: 0.6;
+            opacity: 0.8;
             pointer-events: none;
         }
+
         #content {
             width: 80%;
             max-width: 800px;
             text-align: center;
             position: relative;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Отступы между элементами */
         }
+
         h1 {
-            font-size: 4em;
+            font-size: 3.5em;
             font-weight: 900;
-            margin: 0 0 10px 0;
-            color: #e74c3c;
+            margin: 0;
+            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 5px;
-            text-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+            text-shadow: 0 0 20px var(--accent-glow);
+            transition: transform 0.05s ease-out;
         }
-        h2 {
-            font-size: 1.5em;
+
+        /* Основной статус (бывший Connecting...) */
+        #main-status {
+            font-size: 1.8em;
             font-weight: 400;
             color: #ecf0f1;
-            margin: 0 0 40px 0;
-            opacity: 0.8;
+            margin: 0;
+            opacity: 1;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            min-height: 1.2em; /* Чтобы текст не прыгал */
         }
-        #status-container {
-            text-align: left;
-            margin-bottom: 5px;
-            font-size: 0.9em;
+
+        /* Мелкий статус (имя файла) */
+        #file-status {
+            font-size: 1em;
             color: #bdc3c7;
-            min-height: 1.2em;
+            text-align: left;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        #progress-bg {
+
+        /* Контейнеры для полосок */
+        .progress-container {
             width: 100%;
-            height: 6px;
-            background: #2c3e50;
+            background: #1a1a1a;
             border-radius: 3px;
             overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
         }
-        #progress-bar {
+
+        /* Первая полоска (Общая) */
+        #progress-bg-main {
+            height: 10px;
+        }
+        #progress-bar-main {
             height: 100%;
             width: 0%;
-            background: #c0392b;
-            transition: width 0.1s linear;
-            box-shadow: 0 0 10px #c0392b;
+            background: var(--accent);
+            transition: width 0.2s linear;
+            box-shadow: 0 0 10px var(--accent);
         }
-        #mute-btn {
+
+        /* Вторая полоска (Файл) */
+        #progress-bg-file {
+            height: 4px;
+            margin-top: -10px; /* Прижимаем ближе к тексту файла */
+        }
+        #progress-bar-file {
+            height: 100%;
+            width: 0%;
+            background: var(--secondary);
+            /* Анимация будет управляться JS для плавности */
+            transition: width 0.5s ease-out; 
+            box-shadow: 0 0 5px var(--secondary);
+        }
+
+        #debug-log {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #e74c3c;
-            color: #e74c3c;
-            padding: 10px 20px;
-            cursor: pointer;
-            z-index: 100;
-            font-weight: bold;
-            transition: all 0.3s;
-            text-transform: uppercase;
-        }
-        #mute-btn:hover {
-            background: #e74c3c;
-            color: white;
-        }
-        .glitch-effect {
-            animation: glitch 2s infinite;
-        }
-        @keyframes glitch {
-            0% { text-shadow: 2px 0 #fff, -2px 0 #c0392b; }
-            25% { text-shadow: -2px 0 #fff, 2px 0 #c0392b; }
-            50% { text-shadow: 2px 0 #fff, -2px 0 #c0392b; }
-            75% { text-shadow: -2px 0 #fff, 2px 0 #c0392b; }
-            100% { text-shadow: 2px 0 #fff, -2px 0 #c0392b; }
+            bottom: 10px;
+            right: 10px;
+            font-family: monospace;
+            color: #333;
+            font-size: 10px;
+            text-align: right;
+            pointer-events: none;
+            z-index: 20;
         }
     </style>
 </head>
 <body>
     <div id="bg"></div>
     <canvas id="visualizer"></canvas>
-    <button id="mute-btn">Enable Sound</button>
+    <div id="debug-log">System Boot...</div>
 
     <div id="content">
-        <h1 class="glitch-effect" id="server-name">LOADING...</h1>
-        <h2 id="map-name">Connecting...</h2>
+        <h1 id="server-name">SCARY SEARCH</h1>
         
-        <div id="status-container">
-            <span id="status-text">Initializing...</span>
+        <h2 id="main-status">Connecting...</h2>
+        
+        <div class="progress-container" id="progress-bg-main">
+            <div id="progress-bar-main"></div>
         </div>
-        
-        <div id="progress-bg">
-            <div id="progress-bar"></div>
+
+        <div id="file-status">Initializing file system...</div>
+
+        <div class="progress-container" id="progress-bg-file">
+            <div id="progress-bar-file"></div>
         </div>
     </div>
 
+    <audio id="bg-music" src="loading_music.mp3" loop preload="auto"></audio>
+
     <script>
+        const MUSIC_FILE = 'loading_music.mp3';
+        const BAR_COUNT = 64;
+        const FPS = 60;
+        const SENSITIVITY = 1.5;
+        
         const elServer = document.getElementById('server-name');
-        const elMap = document.getElementById('map-name');
-        const elStatus = document.getElementById('status-text');
-        const elBar = document.getElementById('progress-bar');
+        const elMainStatus = document.getElementById('main-status');
+        const elFileStatus = document.getElementById('file-status');
+        
+        const elBarMain = document.getElementById('progress-bar-main');
+        const elBarFile = document.getElementById('progress-bar-file');
+        
         const cvs = document.getElementById('visualizer');
         const ctx = cvs.getContext('2d');
-        const btnMute = document.getElementById('mute-btn');
+        const audio = document.getElementById('bg-music');
+        const debugLog = document.getElementById('debug-log');
+        const root = document.documentElement;
+
+        let audioData = null;
+        let isAnalyzed = false;
         
-        let audioCtx, analyser, source;
-        let audio = new Audio('music.mp3');
-        audio.loop = true;
-        audio.volume = 0.4;
-        
+        // Переменные для GMod логики
         let filesTotal = 0;
         let filesNeeded = 0;
-        let isAudioInit = false;
+        let fileSimInterval = null;
+
+        // Визуал
+        let colorHue = 0;
+
+        function log(msg) {
+            debugLog.innerHTML += "<br>" + msg;
+            console.log("[JS-Loader]: " + msg);
+        }
 
         function resize() {
             cvs.width = window.innerWidth;
-            cvs.height = window.innerHeight * 0.3;
+            cvs.height = window.innerHeight * 0.4;
         }
         window.addEventListener('resize', resize);
         resize();
 
-        function initAudio() {
-            if(isAudioInit) return;
-            
+        // === АУДИО ЧАСТЬ (Осталась прежней) ===
+        async function analyzeAudio(url) {
             try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioCtx.createAnalyser();
-                source = audioCtx.createMediaElementSource(audio);
-                source.connect(analyser);
-                analyser.connect(audioCtx.destination);
-                analyser.fftSize = 256;
-                
-                audio.play().then(() => {
-                    btnMute.innerText = "MUTE MUSIC";
-                    isAudioInit = true;
-                    drawVisualizer();
-                }).catch(e => {
-                    console.log("Autoplay blocked");
-                });
-            } catch(e) {
-                console.error(e);
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
+                processAudioBuffer(audioBuffer);
+            } catch (e) {
+                log("Audio analysis skipped.");
             }
         }
 
-        function toggleSound() {
-            if (!isAudioInit) {
-                initAudio();
-                return;
+        function processAudioBuffer(buffer) {
+            const rawData = buffer.getChannelData(0);
+            const sampleRate = buffer.sampleRate;
+            const samplesPerFrame = Math.floor(sampleRate / FPS);
+            const totalFrames = Math.floor(rawData.length / samplesPerFrame);
+            audioData = new Float32Array(totalFrames);
+            for (let i = 0; i < totalFrames; i++) {
+                const start = i * samplesPerFrame;
+                let sum = 0;
+                for (let j = 0; j < samplesPerFrame; j++) {
+                    sum += rawData[start + j] * rawData[start + j];
+                }
+                audioData[i] = Math.sqrt(sum / samplesPerFrame);
             }
-            if (audio.paused) {
-                audio.play();
-                btnMute.innerText = "MUTE MUSIC";
-            } else {
-                audio.pause();
-                btnMute.innerText = "PLAY MUSIC";
-            }
+            isAnalyzed = true;
         }
 
-        btnMute.addEventListener('click', toggleSound);
-        document.body.addEventListener('click', () => {
-            if(!isAudioInit) initAudio();
-        }, {once:true});
+        function tryPlayMusic() {
+            if (!audio.paused) return;
+            audio.volume = 0.3;
+            audio.play().catch(e => {});
+        }
 
-        function drawVisualizer() {
-            if(!isAudioInit || audio.paused) {
-                requestAnimationFrame(drawVisualizer);
-                return;
+        window.addEventListener('load', () => {
+            analyzeAudio(MUSIC_FILE);
+            tryPlayMusic();
+            animate();
+        });
+        document.addEventListener('click', tryPlayMusic);
+        document.addEventListener('keydown', tryPlayMusic);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = audio.currentTime;
+            let currentVolume = 0;
+
+            if (isAnalyzed && audioData) {
+                const frameIndex = Math.floor(time * FPS);
+                if (frameIndex < audioData.length) {
+                    currentVolume = audioData[frameIndex] * SENSITIVITY;
+                }
+            } else if (!audio.paused) {
+                currentVolume = (Math.sin(time * 5) * 0.5 + 0.5) * 0.2;
             }
+            currentVolume = Math.max(0, currentVolume);
 
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
+            // Эффект цвета
+            colorHue = (colorHue + 0.5 + currentVolume * 2) % 360;
+            const mainColor = `hsl(${colorHue}, 80%, 60%)`;
+            const glowColor = `hsla(${colorHue}, 80%, 60%, 0.5)`;
+            root.style.setProperty('--accent', mainColor);
+            root.style.setProperty('--accent-glow', glowColor);
 
+            const scale = 1 + (currentVolume * 0.1);
+            elServer.style.transform = `scale(${scale})`;
+
+            // Отрисовка
             ctx.clearRect(0, 0, cvs.width, cvs.height);
-
-            const barWidth = (cvs.width / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
-
-            for(let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
-                ctx.fillStyle = 'rgba(192, 57, 43, ' + (barHeight/255) + ')';
-                ctx.fillRect(x, cvs.height - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
+            const barWidth = cvs.width / BAR_COUNT;
+            for (let i = 0; i < BAR_COUNT; i++) {
+                const centerOffset = Math.abs(i - BAR_COUNT / 2) / (BAR_COUNT / 2);
+                const wave = Math.sin(i * 0.2 + time * 3) * 0.5 + 0.5;
+                const wave2 = Math.cos(i * 0.3 - time * 2) * 0.3;
+                let barHeight = (wave + wave2) * cvs.height * 0.5 * (currentVolume + 0.1);
+                barHeight *= (1.2 - centerOffset);
+                barHeight += currentVolume * cvs.height * 0.3 * (1 - centerOffset);
+                ctx.fillStyle = `hsla(${colorHue}, 80%, 60%, ${Math.min(1, currentVolume + 0.3)})`;
+                ctx.fillRect(i * barWidth, cvs.height - barHeight, barWidth - 2, barHeight);
             }
-
-            requestAnimationFrame(drawVisualizer);
         }
+
+        // === ИЗМЕНЕННАЯ ЛОГИКА GMOD ===
 
         function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode) {
             elServer.innerText = servername;
-            elMap.innerText = mapname;
+            // Карта теперь не показывается вместо статуса, но можно добавить её в угол, если нужно
+            log("Map: " + mapname);
         }
 
+        // 1. Обновление главного текста (Раньше было Connecting...)
         function SetStatusChanged(status) {
-            elStatus.innerText = status;
+            elMainStatus.innerText = status;
+            
+            // Если статус не про скачивание, скрываем нижнюю полоску
+            if(status.indexOf("Getting Addon Info") !== -1 || status === "Sending Client Info") {
+                 elBarFile.style.width = "100%";
+            }
         }
 
+        // 2. Скачивание конкретного файла
         function DownloadingFile(fileName) {
-            elStatus.innerText = "Downloading: " + fileName;
+            // Пишем имя файла во вторую строчку
+            elFileStatus.innerText = "Downloading: " + fileName;
+            
+            // Сбрасываем и запускаем симуляцию полоски файла
+            // Т.к. мы не знаем размер файла, мы делаем фейковую анимацию "загрузки"
+            elBarFile.style.transition = 'none';
+            elBarFile.style.width = '0%';
+            
+            setTimeout(() => {
+                elBarFile.style.transition = 'width 1.5s ease-out'; // Медленно ползет
+                elBarFile.style.width = '80%'; // Доползает до 80% и ждет
+            }, 50);
         }
 
         function SetFilesTotal(total) {
             filesTotal = total;
         }
 
+        // 3. Общий прогресс (Верхняя полоска)
         function SetFilesNeeded(needed) {
             filesNeeded = needed;
-            updateProgress();
-        }
-
-        function updateProgress() {
             if (filesTotal > 0) {
                 const downloaded = filesTotal - filesNeeded;
                 const percent = (downloaded / filesTotal) * 100;
-                elBar.style.width = Math.min(percent, 100) + '%';
+                elBarMain.style.width = Math.min(percent, 100) + '%';
             }
         }
         
-        window.onload = function() {
-            if (!window.gmod) {
-               setTimeout(() => {
-                   elBar.style.width = '100%';
-               }, 1000);
-            }
-        };
+        // Тест для браузера
+        if (!window.gmod && !window.gtps) {
+           setTimeout(() => { 
+               SetStatusChanged("Downloading Custom Assets...");
+               SetFilesTotal(10);
+               let needed = 10;
+               setInterval(() => {
+                   if(needed > 0) {
+                       needed--;
+                       SetFilesNeeded(needed);
+                       DownloadingFile("models/scary_search/monster_" + needed + ".mdl");
+                   } else {
+                       SetStatusChanged("Sending Client Info...");
+                   }
+               }, 2000);
+           }, 1000);
+        }
     </script>
 </body>
 </html>

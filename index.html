@@ -10,7 +10,6 @@
             --accent-glow: rgba(231, 76, 60, 0.5);
             --secondary: #f39c12; 
         }
-
         body {
             background-color: #050505;
             color: #ffffff;
@@ -27,7 +26,6 @@
             user-select: none;
             cursor: none;
         }
-
         #bg {
             position: absolute;
             top: 0;
@@ -35,9 +33,17 @@
             width: 100%;
             height: 100%;
             background: radial-gradient(circle, rgba(20,20,20,1) 0%, rgba(0,0,0,1) 100%);
-            z-index: -1;
+            z-index: -2;
         }
-
+        #stars-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
         #visualizer {
             position: absolute;
             bottom: 0;
@@ -48,7 +54,6 @@
             opacity: 0.8;
             pointer-events: none;
         }
-
         #content {
             width: 80%;
             max-width: 800px;
@@ -57,9 +62,8 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            gap: 10px; /* Уменьшил отступ, так как текста между полосками нет */
+            gap: 10px;
         }
-
         h1 {
             font-size: 3.5em;
             font-weight: 900;
@@ -70,23 +74,19 @@
             text-shadow: 0 0 20px var(--accent-glow);
             transition: transform 0.05s ease-out;
         }
-
         #main-status {
-            font-size: 1.5em; /* Чуть уменьшил, чтобы длинные пути влезали */
+            font-size: 1.5em;
             font-weight: 400;
             color: #ecf0f1;
             margin: 0 0 10px 0;
             opacity: 1;
             text-shadow: 0 0 5px rgba(0,0,0,0.8);
             min-height: 1.2em;
-            
-            /* Если путь очень длинный, обрезаем его красиво */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
         }
-
         .progress-container {
             width: 100%;
             background: #1a1a1a;
@@ -95,10 +95,8 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             position: relative;
         }
-
-        /* --- ПЕРВАЯ ПОЛОСКА (Общий прогресс) --- */
         #progress-bg-main {
-            height: 12px; /* Чуть толще */
+            height: 12px;
         }
         #progress-bar-main {
             height: 100%;
@@ -107,21 +105,16 @@
             transition: width 0.2s linear;
             box-shadow: 0 0 10px var(--accent);
         }
-
-        /* --- ВТОРАЯ ПОЛОСКА (Активность файла) --- */
         #progress-bg-file {
-            height: 6px; /* Тонкая полоска снизу */
-            margin-top: -5px; /* Ближе к верхней */
-            opacity: 0; /* Скрыта, пока не начнем качать */
+            height: 6px;
+            margin-top: -5px;
+            opacity: 0;
             transition: opacity 0.3s;
         }
-        
         #progress-bar-file {
             height: 100%;
             width: 100%;
             background-color: var(--secondary);
-            
-            /* Эффект "Зебры" */
             background-image: linear-gradient(
                 45deg, 
                 rgba(255, 255, 255, 0.2) 25%, 
@@ -136,12 +129,111 @@
             box-shadow: 0 0 5px var(--secondary);
             animation: move-stripes 1s linear infinite;
         }
-
         @keyframes move-stripes {
             0% { background-position: 0 0; }
             100% { background-position: 20px 0; }
         }
-
+        #tip-container {
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #bdc3c7;
+            font-style: italic;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            min-height: 1.5em;
+            text-shadow: 0 0 2px rgba(0,0,0,0.8);
+        }
+        #tip-prefix {
+            font-weight: bold;
+            color: var(--secondary);
+            margin-right: 5px;
+            font-style: normal;
+        }
+        
+        /* --- Developer List Styles --- */
+        #dev-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 50;
+            pointer-events: auto; /* Allow clicking links */
+        }
+        .dev-card {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-right: 3px solid var(--accent);
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s, background 0.3s;
+            text-decoration: none;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .dev-card:hover {
+            transform: translateX(-5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .dev-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid var(--accent);
+        }
+        .dev-info {
+            text-align: left;
+        }
+        .dev-name {
+            font-size: 0.9em;
+            font-weight: 700;
+            display: block;
+        }
+        .dev-role {
+            font-size: 0.7em;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        #music-container {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            text-align: left;
+            z-index: 50;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 1s ease-out;
+            border-left: 3px solid var(--accent);
+            padding-left: 15px;
+            cursor: pointer; 
+        }
+        #music-label {
+            font-size: 0.8em;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        #music-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 2px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #music-author {
+            font-size: 0.9em;
+            color: #bdc3c7;
+            font-style: italic;
+        }
         #debug-log {
             position: absolute;
             bottom: 10px;
@@ -157,12 +249,21 @@
 </head>
 <body>
     <div id="bg"></div>
+    <canvas id="stars-canvas"></canvas>
     <canvas id="visualizer"></canvas>
-    <div id="debug-log">System Boot...</div>
+    <div id="debug-log"></div>
+
+    <div id="music-container" onclick="forcePlayMusic()">
+        <div id="music-label">NOW PLAYING</div>
+        <div id="music-title">Loading...</div>
+        <div id="music-author"></div>
+    </div>
+
+    <div id="dev-container">
+        </div>
 
     <div id="content">
         <h1 id="server-name">SCARY SEARCH</h1>
-        
         <h2 id="main-status">Connecting...</h2>
         
         <div class="progress-container" id="progress-bg-main">
@@ -172,31 +273,48 @@
         <div class="progress-container" id="progress-bg-file">
             <div id="progress-bar-file"></div>
         </div>
+
+        <div id="tip-container">
+            <span id="tip-prefix">TIP:</span> <span id="tip-text"></span>
+        </div>
     </div>
 
-    <audio id="bg-music" src="loading_music.mp3" loop preload="auto"></audio>
+    <script src="developers.js"></script>
+    <script src="tips.js"></script>
+    <script src="stars.js"></script>
+
+    <audio id="bg-music" crossOrigin="anonymous"></audio>
 
     <script>
-        const MUSIC_FILE = 'loading_music.mp3';
+        const COLOR_SPEED = 0.2;
+        const TIP_INTERVAL = 6000;
         const BAR_COUNT = 64;
-        const FPS = 60;
-        const SENSITIVITY = 1.5;
+        const SENSITIVITY = 1.2;
+        const TARGET_VOLUME = 0.3;
+        const MUSIC_FILE = 'loading_music.mp3'; // Hardcoded single file
         
         const elServer = document.getElementById('server-name');
         const elMainStatus = document.getElementById('main-status');
-        
         const elBarMain = document.getElementById('progress-bar-main');
-        // Сам контейнер второй полоски (чтобы скрывать/показывать целиком)
         const elBgFile = document.getElementById('progress-bg-file'); 
+        const elTipContainer = document.getElementById('tip-container');
+        const elTipText = document.getElementById('tip-text');
         
+        const elMusicBox = document.getElementById('music-container');
+        const elMusicTitle = document.getElementById('music-title');
+        const elMusicAuthor = document.getElementById('music-author');
+        const elDevContainer = document.getElementById('dev-container');
+
         const cvs = document.getElementById('visualizer');
         const ctx = cvs.getContext('2d');
         const audio = document.getElementById('bg-music');
         const debugLog = document.getElementById('debug-log');
         const root = document.documentElement;
 
-        let audioData = null;
-        let isAnalyzed = false;
+        let audioCtx, analyser, source;
+        let dataArray;
+        let isRealtime = false;
+        let retryTimer = null;
         
         let filesTotal = 0;
         let filesNeeded = 0;
@@ -213,64 +331,164 @@
         window.addEventListener('resize', resize);
         resize();
 
-        async function analyzeAudio(url) {
-            try {
-                const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
-                processAudioBuffer(audioBuffer);
-            } catch (e) {
-                log("Simulating Visualizer");
-            }
+        // --- DEVELOPERS LOGIC ---
+        function initDevelopers() {
+            if (typeof DEVELOPERS === 'undefined' || DEVELOPERS.length === 0) return;
+            
+            elDevContainer.innerHTML = '';
+            
+            DEVELOPERS.forEach(dev => {
+                const card = document.createElement('a');
+                card.className = 'dev-card';
+                card.href = "https://steamcommunity.com/profiles/" + dev.steamid;
+                card.target = "_blank"; // Opens in new tab (or overlay in GMod)
+                
+                // Using HTML template string for cleaner structure
+                card.innerHTML = `
+                    <img src="${dev.avatar}" class="dev-avatar" alt="avatar">
+                    <div class="dev-info">
+                        <span class="dev-name">${dev.name}</span>
+                        <span class="dev-role">${dev.role}</span>
+                    </div>
+                `;
+                
+                elDevContainer.appendChild(card);
+            });
         }
 
-        function processAudioBuffer(buffer) {
-            const rawData = buffer.getChannelData(0);
-            const samplesPerFrame = Math.floor(buffer.sampleRate / FPS);
-            const totalFrames = Math.floor(rawData.length / samplesPerFrame);
-            audioData = new Float32Array(totalFrames);
-            for (let i = 0; i < totalFrames; i++) {
-                const start = i * samplesPerFrame;
-                let sum = 0;
-                for (let j = 0; j < samplesPerFrame; j++) {
-                    sum += rawData[start + j] * rawData[start + j];
-                }
-                audioData[i] = Math.sqrt(sum / samplesPerFrame);
+        function startTips() {
+            if (typeof LOADING_TIPS === 'undefined' || LOADING_TIPS.length === 0) return;
+            function nextTip() {
+                elTipContainer.style.opacity = 0;
+                setTimeout(() => {
+                    const randomTip = LOADING_TIPS[Math.floor(Math.random() * LOADING_TIPS.length)];
+                    elTipText.innerText = randomTip;
+                    elTipContainer.style.opacity = 1;
+                }, 500);
             }
-            isAnalyzed = true;
+            nextTip();
+            setInterval(nextTip, TIP_INTERVAL);
         }
 
-        function tryPlayMusic() {
+        function playMusic() {
+            // Setup music display
+            elMusicTitle.innerText = "Loading Music"; // Or custom name if desired
+            elMusicAuthor.innerText = "Background Ambience";
+            
+            // Show music box
+            elMusicBox.style.opacity = 1;
+            elMusicBox.style.transform = "translateX(0)";
+
+            audio.src = MUSIC_FILE;
+            audio.load(); 
+            forcePlayMusic();
+        }
+
+        function forcePlayMusic() {
             if (!audio.paused) return;
-            audio.volume = 0.3;
-            audio.play().catch(e => {});
+            
+            audio.volume = 0; 
+            const playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    log("Autoplay Success");
+                    if (retryTimer) clearInterval(retryTimer);
+                    
+                    let vol = 0;
+                    const fade = setInterval(() => {
+                        vol += 0.02;
+                        if (vol >= TARGET_VOLUME) {
+                            vol = TARGET_VOLUME;
+                            clearInterval(fade);
+                        }
+                        audio.volume = vol;
+                    }, 100);
+
+                }).catch(error => {
+                    log("Autoplay Blocked - Retrying...");
+                    if (!retryTimer) {
+                        retryTimer = setInterval(forcePlayMusic, 1000); 
+                    }
+                });
+            }
         }
+
+        function initAudioContext() {
+            if (audioCtx) return; 
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                audioCtx = new AudioContext();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256; 
+                source = audioCtx.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                isRealtime = true;
+            } catch (e) {
+                isRealtime = false;
+            }
+        }
+
+        // Loop music
+        audio.addEventListener('ended', () => {
+            audio.currentTime = 0;
+            audio.play();
+        });
 
         window.addEventListener('load', () => {
-            analyzeAudio(MUSIC_FILE);
-            tryPlayMusic();
+            if (window.initStarBackground) window.initStarBackground();
+            initDevelopers();
+            startTips();
+            playMusic(); // Just plays the single file
             animate();
         });
-        document.addEventListener('click', tryPlayMusic);
-        document.addEventListener('keydown', tryPlayMusic);
+        
+        document.addEventListener('click', () => {
+            initAudioContext();
+            forcePlayMusic();
+        });
+        document.addEventListener('keydown', forcePlayMusic);
 
         function animate() {
             requestAnimationFrame(animate);
+            if (!audioCtx && !audio.paused) initAudioContext();
+
             const time = audio.currentTime;
             let currentVolume = 0;
+            let barData = [];
 
-            if (isAnalyzed && audioData) {
-                const frameIndex = Math.floor(time * FPS);
-                if (frameIndex < audioData.length) {
-                    currentVolume = audioData[frameIndex] * SENSITIVITY;
+            if (isRealtime && analyser && !audio.paused) {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for(let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
                 }
-            } else if (!audio.paused) {
-                currentVolume = (Math.sin(time * 5) * 0.5 + 0.5) * 0.2;
+                currentVolume = (sum / dataArray.length) / 255 * SENSITIVITY;
+                const step = Math.floor(dataArray.length / BAR_COUNT);
+                for (let i = 0; i < BAR_COUNT; i++) {
+                    barData[i] = (dataArray[i * step] / 255) * SENSITIVITY;
+                }
+            } else {
+                if (!audio.paused) {
+                    currentVolume = (Math.sin(time * 5) * 0.5 + 0.5) * 0.2;
+                }
+                for (let i = 0; i < BAR_COUNT; i++) {
+                    const wave = Math.sin(i * 0.2 + time * 3) * 0.5 + 0.5;
+                    const wave2 = Math.cos(i * 0.3 - time * 2) * 0.3;
+                    let val = (wave + wave2) * 0.5 * (currentVolume + 0.2);
+                    const centerOffset = Math.abs(i - BAR_COUNT / 2) / (BAR_COUNT / 2);
+                    val *= (1.2 - centerOffset);
+                    barData[i] = val;
+                }
             }
-            currentVolume = Math.max(0, currentVolume);
 
-            colorHue = (colorHue + 0.5 + currentVolume * 2) % 360;
+            currentVolume = Math.max(0, currentVolume);
+            window.audioVisLevel = currentVolume;
+
+            colorHue = (colorHue + COLOR_SPEED) % 360;
             const mainColor = `hsl(${colorHue}, 80%, 60%)`;
             const glowColor = `hsla(${colorHue}, 80%, 60%, 0.5)`;
             root.style.setProperty('--accent', mainColor);
@@ -281,19 +499,14 @@
 
             ctx.clearRect(0, 0, cvs.width, cvs.height);
             const barWidth = cvs.width / BAR_COUNT;
+            
             for (let i = 0; i < BAR_COUNT; i++) {
-                const centerOffset = Math.abs(i - BAR_COUNT / 2) / (BAR_COUNT / 2);
-                const wave = Math.sin(i * 0.2 + time * 3) * 0.5 + 0.5;
-                const wave2 = Math.cos(i * 0.3 - time * 2) * 0.3;
-                let barHeight = (wave + wave2) * cvs.height * 0.5 * (currentVolume + 0.1);
-                barHeight *= (1.2 - centerOffset);
-                barHeight += currentVolume * cvs.height * 0.3 * (1 - centerOffset);
-                ctx.fillStyle = `hsla(${colorHue}, 80%, 60%, ${Math.min(1, currentVolume + 0.3)})`;
+                let barHeight = barData[i] * cvs.height * 0.8;
+                barHeight = Math.max(2, barHeight); 
+                ctx.fillStyle = `hsla(${colorHue}, 80%, 60%, ${Math.min(1, barData[i] + 0.3)})`;
                 ctx.fillRect(i * barWidth, cvs.height - barHeight, barWidth - 2, barHeight);
             }
         }
-
-        // === LOGIC GMOD ===
 
         function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode) {
             elServer.innerText = servername;
@@ -301,18 +514,13 @@
 
         function SetStatusChanged(status) {
             elMainStatus.innerText = status;
-            
-            // Если статус не о скачивании, скрываем нижнюю полоску
             if(status.indexOf("Getting Addon Info") !== -1 || status === "Sending Client Info" || status === "Mounting Addons") {
                  elBgFile.style.opacity = "0";
             }
         }
 
         function DownloadingFile(fileName) {
-            // Пишем имя файла в ГЛАВНЫЙ статус
             elMainStatus.innerText = "Downloading: " + fileName;
-            
-            // Показываем нижнюю полоску активности
             elBgFile.style.opacity = "1";
         }
 
@@ -329,18 +537,15 @@
             }
         }
         
-        // Тест для браузера
         if (!window.gmod && !window.gtps) {
            setTimeout(() => { 
                SetStatusChanged("Preparing Assets...");
                SetFilesTotal(5);
                let needed = 5;
-               
                const interval = setInterval(() => {
                    if(needed > 0) {
                        needed--;
                        SetFilesNeeded(needed);
-                       // Эмуляция длинного пути к файлу
                        DownloadingFile("models/scary_search/monsters/very_scary_model_" + needed + ".mdl");
                    } else {
                        clearInterval(interval);

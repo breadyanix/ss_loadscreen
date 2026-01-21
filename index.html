@@ -8,7 +8,7 @@
         :root {
             --accent: #e74c3c;
             --accent-glow: rgba(231, 76, 60, 0.5);
-            --secondary: #f39c12; /* Цвет второй полоски (Оранжевый) */
+            --secondary: #f39c12; 
         }
 
         body {
@@ -57,13 +57,13 @@
             z-index: 10;
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Отступы между элементами */
+            gap: 10px; /* Уменьшил отступ, так как текста между полосками нет */
         }
 
         h1 {
             font-size: 3.5em;
             font-weight: 900;
-            margin: 0;
+            margin: 0 0 10px 0;
             color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 5px;
@@ -71,30 +71,22 @@
             transition: transform 0.05s ease-out;
         }
 
-        /* Основной статус (бывший Connecting...) */
         #main-status {
-            font-size: 1.8em;
+            font-size: 1.5em; /* Чуть уменьшил, чтобы длинные пути влезали */
             font-weight: 400;
             color: #ecf0f1;
-            margin: 0;
+            margin: 0 0 10px 0;
             opacity: 1;
             text-shadow: 0 0 5px rgba(0,0,0,0.8);
-            min-height: 1.2em; /* Чтобы текст не прыгал */
-        }
-
-        /* Мелкий статус (имя файла) */
-        #file-status {
-            font-size: 1em;
-            color: #bdc3c7;
-            text-align: left;
-            margin-top: 10px;
-            font-family: monospace;
+            min-height: 1.2em;
+            
+            /* Если путь очень длинный, обрезаем его красиво */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 100%;
         }
 
-        /* Контейнеры для полосок */
         .progress-container {
             width: 100%;
             background: #1a1a1a;
@@ -104,9 +96,9 @@
             position: relative;
         }
 
-        /* Первая полоска (Общая) */
+        /* --- ПЕРВАЯ ПОЛОСКА (Общий прогресс) --- */
         #progress-bg-main {
-            height: 10px;
+            height: 12px; /* Чуть толще */
         }
         #progress-bar-main {
             height: 100%;
@@ -116,18 +108,38 @@
             box-shadow: 0 0 10px var(--accent);
         }
 
-        /* Вторая полоска (Файл) */
+        /* --- ВТОРАЯ ПОЛОСКА (Активность файла) --- */
         #progress-bg-file {
-            height: 4px;
-            margin-top: -10px; /* Прижимаем ближе к тексту файла */
+            height: 6px; /* Тонкая полоска снизу */
+            margin-top: -5px; /* Ближе к верхней */
+            opacity: 0; /* Скрыта, пока не начнем качать */
+            transition: opacity 0.3s;
         }
+        
         #progress-bar-file {
             height: 100%;
-            width: 0%;
-            background: var(--secondary);
-            /* Анимация будет управляться JS для плавности */
-            transition: width 0.5s ease-out; 
+            width: 100%;
+            background-color: var(--secondary);
+            
+            /* Эффект "Зебры" */
+            background-image: linear-gradient(
+                45deg, 
+                rgba(255, 255, 255, 0.2) 25%, 
+                transparent 25%, 
+                transparent 50%, 
+                rgba(255, 255, 255, 0.2) 50%, 
+                rgba(255, 255, 255, 0.2) 75%, 
+                transparent 75%, 
+                transparent
+            );
+            background-size: 20px 20px;
             box-shadow: 0 0 5px var(--secondary);
+            animation: move-stripes 1s linear infinite;
+        }
+
+        @keyframes move-stripes {
+            0% { background-position: 0 0; }
+            100% { background-position: 20px 0; }
         }
 
         #debug-log {
@@ -157,8 +169,6 @@
             <div id="progress-bar-main"></div>
         </div>
 
-        <div id="file-status">Initializing file system...</div>
-
         <div class="progress-container" id="progress-bg-file">
             <div id="progress-bar-file"></div>
         </div>
@@ -174,10 +184,10 @@
         
         const elServer = document.getElementById('server-name');
         const elMainStatus = document.getElementById('main-status');
-        const elFileStatus = document.getElementById('file-status');
         
         const elBarMain = document.getElementById('progress-bar-main');
-        const elBarFile = document.getElementById('progress-bar-file');
+        // Сам контейнер второй полоски (чтобы скрывать/показывать целиком)
+        const elBgFile = document.getElementById('progress-bg-file'); 
         
         const cvs = document.getElementById('visualizer');
         const ctx = cvs.getContext('2d');
@@ -188,17 +198,12 @@
         let audioData = null;
         let isAnalyzed = false;
         
-        // Переменные для GMod логики
         let filesTotal = 0;
         let filesNeeded = 0;
-        let fileSimInterval = null;
-
-        // Визуал
         let colorHue = 0;
 
         function log(msg) {
             debugLog.innerHTML += "<br>" + msg;
-            console.log("[JS-Loader]: " + msg);
         }
 
         function resize() {
@@ -208,7 +213,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // === АУДИО ЧАСТЬ (Осталась прежней) ===
         async function analyzeAudio(url) {
             try {
                 const response = await fetch(url);
@@ -217,14 +221,13 @@
                 const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
                 processAudioBuffer(audioBuffer);
             } catch (e) {
-                log("Audio analysis skipped.");
+                log("Simulating Visualizer");
             }
         }
 
         function processAudioBuffer(buffer) {
             const rawData = buffer.getChannelData(0);
-            const sampleRate = buffer.sampleRate;
-            const samplesPerFrame = Math.floor(sampleRate / FPS);
+            const samplesPerFrame = Math.floor(buffer.sampleRate / FPS);
             const totalFrames = Math.floor(rawData.length / samplesPerFrame);
             audioData = new Float32Array(totalFrames);
             for (let i = 0; i < totalFrames; i++) {
@@ -267,7 +270,6 @@
             }
             currentVolume = Math.max(0, currentVolume);
 
-            // Эффект цвета
             colorHue = (colorHue + 0.5 + currentVolume * 2) % 360;
             const mainColor = `hsl(${colorHue}, 80%, 60%)`;
             const glowColor = `hsla(${colorHue}, 80%, 60%, 0.5)`;
@@ -277,7 +279,6 @@
             const scale = 1 + (currentVolume * 0.1);
             elServer.style.transform = `scale(${scale})`;
 
-            // Отрисовка
             ctx.clearRect(0, 0, cvs.width, cvs.height);
             const barWidth = cvs.width / BAR_COUNT;
             for (let i = 0; i < BAR_COUNT; i++) {
@@ -292,45 +293,33 @@
             }
         }
 
-        // === ИЗМЕНЕННАЯ ЛОГИКА GMOD ===
+        // === LOGIC GMOD ===
 
         function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode) {
             elServer.innerText = servername;
-            // Карта теперь не показывается вместо статуса, но можно добавить её в угол, если нужно
-            log("Map: " + mapname);
         }
 
-        // 1. Обновление главного текста (Раньше было Connecting...)
         function SetStatusChanged(status) {
             elMainStatus.innerText = status;
             
-            // Если статус не про скачивание, скрываем нижнюю полоску
-            if(status.indexOf("Getting Addon Info") !== -1 || status === "Sending Client Info") {
-                 elBarFile.style.width = "100%";
+            // Если статус не о скачивании, скрываем нижнюю полоску
+            if(status.indexOf("Getting Addon Info") !== -1 || status === "Sending Client Info" || status === "Mounting Addons") {
+                 elBgFile.style.opacity = "0";
             }
         }
 
-        // 2. Скачивание конкретного файла
         function DownloadingFile(fileName) {
-            // Пишем имя файла во вторую строчку
-            elFileStatus.innerText = "Downloading: " + fileName;
+            // Пишем имя файла в ГЛАВНЫЙ статус
+            elMainStatus.innerText = "Downloading: " + fileName;
             
-            // Сбрасываем и запускаем симуляцию полоски файла
-            // Т.к. мы не знаем размер файла, мы делаем фейковую анимацию "загрузки"
-            elBarFile.style.transition = 'none';
-            elBarFile.style.width = '0%';
-            
-            setTimeout(() => {
-                elBarFile.style.transition = 'width 1.5s ease-out'; // Медленно ползет
-                elBarFile.style.width = '80%'; // Доползает до 80% и ждет
-            }, 50);
+            // Показываем нижнюю полоску активности
+            elBgFile.style.opacity = "1";
         }
 
         function SetFilesTotal(total) {
             filesTotal = total;
         }
 
-        // 3. Общий прогресс (Верхняя полоска)
         function SetFilesNeeded(needed) {
             filesNeeded = needed;
             if (filesTotal > 0) {
@@ -343,18 +332,21 @@
         // Тест для браузера
         if (!window.gmod && !window.gtps) {
            setTimeout(() => { 
-               SetStatusChanged("Downloading Custom Assets...");
-               SetFilesTotal(10);
-               let needed = 10;
-               setInterval(() => {
+               SetStatusChanged("Preparing Assets...");
+               SetFilesTotal(5);
+               let needed = 5;
+               
+               const interval = setInterval(() => {
                    if(needed > 0) {
                        needed--;
                        SetFilesNeeded(needed);
-                       DownloadingFile("models/scary_search/monster_" + needed + ".mdl");
+                       // Эмуляция длинного пути к файлу
+                       DownloadingFile("models/scary_search/monsters/very_scary_model_" + needed + ".mdl");
                    } else {
+                       clearInterval(interval);
                        SetStatusChanged("Sending Client Info...");
                    }
-               }, 2000);
+               }, 3000);
            }, 1000);
         }
     </script>

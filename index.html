@@ -33,17 +33,48 @@
             width: 100%;
             height: 100%;
             background: radial-gradient(circle, rgba(20,20,20,1) 0%, rgba(0,0,0,1) 100%);
-            z-index: -2;
+            z-index: -3;
+            transition: background 0.5s ease;
         }
-        #stars-canvas {
+        
+        /* Стили для всех Canvas фонов */
+        #topo-canvas, #stars-canvas, #sakura-canvas, #rift-canvas, #secret-canvas, #teto-canvas, #brainrot-canvas, #frisk-canvas, #sans-canvas, #tower-defense-canvas {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
             pointer-events: none;
+            display: none; 
         }
+
+        #topo-canvas {
+            z-index: -2; 
+            mix-blend-mode: screen; 
+            opacity: 0.6;
+        }
+        
+        #stars-canvas, #sakura-canvas, #rift-canvas, #secret-canvas, #teto-canvas, #brainrot-canvas, #frisk-canvas, #sans-canvas, #tower-defense-canvas {
+            z-index: -1;
+        }
+
+        /* Стиль для GIF Санса */
+        #sans-gif {
+            position: absolute;
+            top: 45%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-height: 70vh; 
+            max-width: 90vw;
+            z-index: -1;
+            display: none; 
+            /* УБРАЛИ ПОДСВЕТКУ (filter: drop-shadow) */
+        }
+
+        #rift-canvas {
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+        }
+
         #visualizer {
             position: absolute;
             bottom: 0;
@@ -159,7 +190,7 @@
             flex-direction: column;
             gap: 10px;
             z-index: 50;
-            pointer-events: auto; /* Allow clicking links */
+            pointer-events: auto;
         }
         .dev-card {
             display: flex;
@@ -185,6 +216,7 @@
             border-radius: 50%;
             margin-right: 10px;
             border: 2px solid var(--accent);
+            box-sizing: border-box; 
         }
         .dev-info {
             text-align: left;
@@ -249,7 +281,20 @@
 </head>
 <body>
     <div id="bg"></div>
+    
+    <canvas id="topo-canvas"></canvas>
     <canvas id="stars-canvas"></canvas>
+    <canvas id="sakura-canvas"></canvas>
+    <canvas id="rift-canvas"></canvas>
+    <canvas id="secret-canvas"></canvas>
+    <canvas id="teto-canvas"></canvas>
+    <canvas id="brainrot-canvas"></canvas>
+    <canvas id="frisk-canvas"></canvas>
+    <canvas id="sans-canvas"></canvas>
+    <canvas id="tower-defense-canvas"></canvas>
+    
+    <img id="sans-gif" src="sans.gif" alt="Sans" crossOrigin="Anonymous">
+    
     <canvas id="visualizer"></canvas>
     <div id="debug-log"></div>
 
@@ -259,8 +304,7 @@
         <div id="music-author"></div>
     </div>
 
-    <div id="dev-container">
-        </div>
+    <div id="dev-container"></div>
 
     <div id="content">
         <h1 id="server-name">SCARY SEARCH</h1>
@@ -281,7 +325,17 @@
 
     <script src="developers.js"></script>
     <script src="tips.js"></script>
+    
     <script src="stars.js"></script>
+    <script src="topo.js"></script>
+    <script src="sakura.js"></script>
+    <script src="rift.js"></script>
+    <script src="secret.js"></script>
+    <script src="teto.js"></script>
+    <script src="brainrot.js"></script>
+    <script src="frisk.js"></script>
+    <script src="sans.js"></script> 
+    <script src="tower_defense.js"></script>
 
     <audio id="bg-music" crossOrigin="anonymous"></audio>
 
@@ -291,7 +345,7 @@
         const BAR_COUNT = 64;
         const SENSITIVITY = 1.2;
         const TARGET_VOLUME = 0.3;
-        const MUSIC_FILE = 'loading_music.mp3'; // Hardcoded single file
+        const MUSIC_FILE = 'loading_music.mp3';
         
         const elServer = document.getElementById('server-name');
         const elMainStatus = document.getElementById('main-status');
@@ -310,6 +364,7 @@
         const audio = document.getElementById('bg-music');
         const debugLog = document.getElementById('debug-log');
         const root = document.documentElement;
+        const bgElement = document.getElementById('bg');
 
         let audioCtx, analyser, source;
         let dataArray;
@@ -319,6 +374,9 @@
         let filesTotal = 0;
         let filesNeeded = 0;
         let colorHue = 0;
+        
+        let devAvatarElements = [];
+        let originalServerName = "SCARY SEARCH"; 
 
         function log(msg) {
             debugLog.innerHTML += "<br>" + msg;
@@ -331,19 +389,14 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- DEVELOPERS LOGIC ---
         function initDevelopers() {
             if (typeof DEVELOPERS === 'undefined' || DEVELOPERS.length === 0) return;
-            
             elDevContainer.innerHTML = '';
-            
             DEVELOPERS.forEach(dev => {
                 const card = document.createElement('a');
                 card.className = 'dev-card';
                 card.href = "https://steamcommunity.com/profiles/" + dev.steamid;
-                card.target = "_blank"; // Opens in new tab (or overlay in GMod)
-                
-                // Using HTML template string for cleaner structure
+                card.target = "_blank";
                 card.innerHTML = `
                     <img src="${dev.avatar}" class="dev-avatar" alt="avatar">
                     <div class="dev-info">
@@ -351,9 +404,9 @@
                         <span class="dev-role">${dev.role}</span>
                     </div>
                 `;
-                
                 elDevContainer.appendChild(card);
             });
+            devAvatarElements = Array.from(document.getElementsByClassName('dev-avatar'));
         }
 
         function startTips() {
@@ -371,11 +424,8 @@
         }
 
         function playMusic() {
-            // Setup music display
-            elMusicTitle.innerText = "Loading Music"; // Or custom name if desired
+            elMusicTitle.innerText = "Loading Music";
             elMusicAuthor.innerText = "Background Ambience";
-            
-            // Show music box
             elMusicBox.style.opacity = 1;
             elMusicBox.style.transform = "translateX(0)";
 
@@ -386,15 +436,12 @@
 
         function forcePlayMusic() {
             if (!audio.paused) return;
-            
             audio.volume = 0; 
             const playPromise = audio.play();
-
             if (playPromise !== undefined) {
                 playPromise.then(() => {
                     log("Autoplay Success");
                     if (retryTimer) clearInterval(retryTimer);
-                    
                     let vol = 0;
                     const fade = setInterval(() => {
                         vol += 0.02;
@@ -404,7 +451,6 @@
                         }
                         audio.volume = vol;
                     }, 100);
-
                 }).catch(error => {
                     log("Autoplay Blocked - Retrying...");
                     if (!retryTimer) {
@@ -432,18 +478,207 @@
             }
         }
 
-        // Loop music
         audio.addEventListener('ended', () => {
             audio.currentTime = 0;
             audio.play();
         });
 
+        // === НОВАЯ ФУНКЦИЯ ДЛЯ АНАЛИЗА ЦВЕТА КАРТИНКИ ===
+        function setBgFromImage(imgId) {
+            const img = document.getElementById(imgId);
+            if (!img) return;
+
+            // Создаем невидимый канвас
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Если картинка еще не загрузилась, ждем
+            if (!img.complete || img.naturalWidth === 0) {
+                img.onload = () => setBgFromImage(imgId);
+                return;
+            }
+
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+
+            try {
+                // Берем пиксели и считаем самый частый цвет (упрощенно)
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                const colorCounts = {};
+                let maxCount = 0;
+                let dominant = 'rgb(0,0,0)';
+                
+                // Проверяем каждый 50-й пиксель для скорости
+                for (let i = 0; i < data.length; i += 4 * 50) {
+                    const r = data[i];
+                    const g = data[i+1];
+                    const b = data[i+2];
+                    const a = data[i+3];
+                    
+                    if (a < 250) continue; // Игнорируем прозрачные
+                    
+                    const key = `${r},${g},${b}`;
+                    colorCounts[key] = (colorCounts[key] || 0) + 1;
+                    
+                    if (colorCounts[key] > maxCount) {
+                        maxCount = colorCounts[key];
+                        dominant = `rgb(${r},${g},${b})`;
+                    }
+                }
+                
+                // Устанавливаем фон
+                bgElement.style.background = dominant;
+                
+            } catch (e) {
+                // Если ошибка (например CORS), ставим черный
+                console.log("Cannot extract color:", e);
+                bgElement.style.background = "#000000";
+            }
+        }
+
+        function switchBackground(mode) {
+            const stars = document.getElementById('stars-canvas');
+            const topo = document.getElementById('topo-canvas');
+            const sakura = document.getElementById('sakura-canvas');
+            const rift = document.getElementById('rift-canvas');
+            const secret = document.getElementById('secret-canvas');
+            const teto = document.getElementById('teto-canvas');
+            const brainrot = document.getElementById('brainrot-canvas');
+            const frisk = document.getElementById('frisk-canvas');
+            const sans = document.getElementById('sans-canvas');
+            const sansGif = document.getElementById('sans-gif');
+            const tdCanvas = document.getElementById('tower-defense-canvas');
+            
+            [stars, topo, sakura, rift, secret, teto, brainrot, frisk, sans, sansGif, tdCanvas].forEach(el => {
+                if(el) el.style.display = 'none';
+            });
+            
+            // Сброс фона на стандартный
+            bgElement.style.background = "radial-gradient(circle, rgba(20,20,20,1) 0%, rgba(0,0,0,1) 100%)";
+
+            const specialNames = ["GOO GOO GAA GAA", "KASANE TETO", "LOBOTOMY KISEN", "DETERMINATION", "BAD TIME", "TOWER DEFENSE"];
+            if (specialNames.includes(elServer.innerText)) {
+                elServer.innerText = originalServerName;
+                elServer.style.color = "";
+            }
+
+            switch(mode) {
+                case 1:
+                    stars.style.display = 'block';
+                    if (window.initStarBackground) window.initStarBackground();
+                    log("Switched to: Stars");
+                    break;
+                case 2:
+                    topo.style.display = 'block';
+                    if (window.initTopoBackground) window.initTopoBackground();
+                    log("Switched to: Topography");
+                    break;
+                case 3:
+                    sakura.style.display = 'block';
+                    if (window.initSakuraBackground) window.initSakuraBackground();
+                    log("Switched to: Sakura");
+                    break;
+                case 4:
+                    rift.style.display = 'block';
+                    if (window.initRiftBackground) window.initRiftBackground();
+                    log("Switched to: Rift");
+                    break;
+                case 5:
+                    secret.style.display = 'block';
+                    if (window.initSecretBackground) window.initSecretBackground();
+                    elServer.innerText = "GOO GOO GAA GAA";
+                    elServer.style.color = "#FF00FF";
+                    log("Switched to: SECRET");
+                    break;
+                case 6:
+                    teto.style.display = 'block';
+                    if (window.initTetoBackground) window.initTetoBackground();
+                    elServer.innerText = "KASANE TETO";
+                    elServer.style.color = "#D01328";
+                    log("Switched to: TETO");
+                    break;
+                case 7:
+                    brainrot.style.display = 'block';
+                    if (window.initBrainrotBackground) window.initBrainrotBackground();
+                    elServer.innerText = "LOBOTOMY KISEN";
+                    elServer.style.color = "#00FF00";
+                    log("Switched to: BRAINROT");
+                    break;
+                case 8:
+                    frisk.style.display = 'block';
+                    if (window.initFriskBackground) window.initFriskBackground();
+                    elServer.innerText = "DETERMINATION";
+                    elServer.style.color = "#FFFF00"; 
+                    log("Switched to: FRISK");
+                    break;
+                case 9:
+                    // РЕЖИМ САНСА: Определяем цвет фона по картинке
+                    sans.style.display = 'block';
+                    sansGif.style.display = 'block'; 
+                    // Вызываем функцию анализа цвета
+                    setBgFromImage('sans-gif');
+                    
+                    if (window.initSansBackground) window.initSansBackground();
+                    elServer.innerText = "BAD TIME";
+                    elServer.style.color = "#00FFFF"; 
+                    log("Switched to: SANS");
+                    break;
+                case 10:
+                    tdCanvas.style.display = 'block';
+                    if (window.initTowerDefenseBackground) window.initTowerDefenseBackground();
+                    elServer.innerText = "TOWER DEFENSE";
+                    elServer.style.color = "#3498db";
+                    log("Switched to: TOWER DEFENSE");
+                    break;
+            }
+        }
+
         window.addEventListener('load', () => {
-            if (window.initStarBackground) window.initStarBackground();
             initDevelopers();
             startTips();
-            playMusic(); // Just plays the single file
+            playMusic();
             animate();
+            
+            // --- ЛОГИКА РАНДОМА ---
+            const rand = Math.random();
+            
+            // Teto: 0.1% (0.001)
+            if (rand < 0.001) { switchBackground(6); } 
+            // Sans: 0.5% (0.001 + 0.005 = 0.006)
+            else if (rand < 0.006) { switchBackground(9); }
+            // Frisk: 1% (0.006 + 0.01 = 0.016)
+            else if (rand < 0.016) { switchBackground(8); }
+            // Secret: 1% (0.016 + 0.01 = 0.026)
+            else if (rand < 0.026) { switchBackground(5); }
+            // Brainrot: 5% (0.026 + 0.05 = 0.076)
+            else if (rand < 0.076) { switchBackground(7); }
+            // Tower Defense: ~5% (0.076 + 0.05 = 0.126)
+            else if (rand < 0.126) { switchBackground(10); }
+            // Обычные
+            else {
+                const subRand = Math.random();
+                if (subRand < 0.25) switchBackground(1);
+                else if (subRand < 0.50) switchBackground(2);
+                else if (subRand < 0.75) switchBackground(3);
+                else switchBackground(4);
+            }
+            
+            // --- ОТЛАДОЧНЫЕ КЛАВИШИ ---
+            if (!window.gmod) {
+                log("Debug Keys Enabled (1-9, 0)");
+                document.addEventListener('keydown', (e) => {
+                    if (['1','2','3','4','5','6','7','8','9','0'].includes(e.key)) {
+                        let mode = parseInt(e.key);
+                        if (mode === 0) mode = 10;
+                        switchBackground(mode);
+                    }
+                });
+            }
+
+            setInterval(() => {
+                if (devAvatarElements.length === 0) initDevelopers();
+            }, 2000);
         });
         
         document.addEventListener('click', () => {
@@ -497,6 +732,17 @@
             const scale = 1 + (currentVolume * 0.1);
             elServer.style.transform = `scale(${scale})`;
 
+            // Анимация аватарок
+            if (devAvatarElements.length > 0) {
+                const avatarScale = 1 + (currentVolume * 5.00);
+                const avatarShadow = `0 0 ${5 + currentVolume * 20}px ${glowColor}`;
+                for (let i = 0; i < devAvatarElements.length; i++) {
+                    devAvatarElements[i].style.transform = `scale(${avatarScale})`;
+                    devAvatarElements[i].style.borderColor = mainColor;
+                    devAvatarElements[i].style.boxShadow = avatarShadow;
+                }
+            }
+
             ctx.clearRect(0, 0, cvs.width, cvs.height);
             const barWidth = cvs.width / BAR_COUNT;
             
@@ -508,8 +754,13 @@
             }
         }
 
+        /* --- GMOD API MOCK --- */
         function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode) {
-            elServer.innerText = servername;
+            originalServerName = servername;
+            const specialNames = ["GOO GOO GAA GAA", "KASANE TETO", "LOBOTOMY KISEN", "DETERMINATION", "BAD TIME", "TOWER DEFENSE"];
+            if (!specialNames.includes(elServer.innerText)) {
+                elServer.innerText = servername;
+            }
         }
 
         function SetStatusChanged(status) {
@@ -539,6 +790,7 @@
         
         if (!window.gmod && !window.gtps) {
            setTimeout(() => { 
+               GameDetails("SCARY SEARCH", "", "gm_construct", 32, "0", "sandbox");
                SetStatusChanged("Preparing Assets...");
                SetFilesTotal(5);
                let needed = 5;

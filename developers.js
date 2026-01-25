@@ -1,9 +1,9 @@
 const DEVELOPERS = [
     {
-        steamid: "76561198332686092", // Ваш SteamID64 (для ссылки при клике)
-        name: "AkaiSWFT",         // Имя
-        role: "Главный разработчик",       // Роль (подсвечивается цветом)
-        avatar: "https://avatars.steamstatic.com/02faca3c2a2d8b0d0cee6eab6ed5ca137c1ed082_full.jpg" // Ссылка на картинку
+        steamid: "76561198332686092",
+        name: "AkaiSWFT",
+        role: "Главный разработчик",
+        avatar: "https://avatars.steamstatic.com/02faca3c2a2d8b0d0cee6eab6ed5ca137c1ed082_full.jpg"
     },
     {
         steamid: "76561198323478269",
